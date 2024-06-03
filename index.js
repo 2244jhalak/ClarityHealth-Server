@@ -31,10 +31,16 @@ async function run() {
     await client.connect();
 
     const districtsCollection=client.db("diagnosticDB").collection("districts");
+    const upazillasCollection=client.db("diagnosticDB").collection("upazillas");
     const usersCollection=client.db("diagnosticDB").collection("users");
 
     app.get('/districts',async(req,res)=>{
         const result=await districtsCollection.find().toArray();
+        res.send(result);
+    })
+
+    app.get('/upazillas',async(req,res)=>{
+        const result=await upazillasCollection.find().toArray();
         res.send(result);
     })
     
