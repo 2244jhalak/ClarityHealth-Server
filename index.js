@@ -55,6 +55,17 @@ async function run() {
         const result=await testCollection.findOne(query);
         res.send(result);
     })
+    app.patch('/test/:id',async (req,res) =>{
+        const id=req.params.id;
+        const filter={_id:new ObjectId(id)};
+        const updatedDoc={
+          $inc:{
+            slots:-1
+          }
+        }
+        const result=await testCollection.updateOne(filter,updatedDoc);
+        res.send(result);
+    })
 
     // users related api
     
@@ -85,7 +96,13 @@ async function run() {
           res.send(result);
   
     })
-
+    
+    app.delete('/reservation/:id', async(req,res)=>{
+        const id = req.params.id;
+        const query={_id:new ObjectId(id)};
+        const result=await reservationCollection.deleteOne(query);
+        res.send(result);
+      })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
