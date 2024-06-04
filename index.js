@@ -1,7 +1,7 @@
 const express=require('express');
 const cors=require('cors');
 const jwt=require('jsonwebtoken');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
 const app=express();
@@ -31,8 +31,10 @@ async function run() {
     await client.connect();
 
     const districtsCollection=client.db("diagnosticDB").collection("districts");
-    const upazillasCollection=client.db("diagnosticDB").collection("upazillas");
+    const upazillasCollection=client.db("diagnosticDB").collection("upazilas");
     const usersCollection=client.db("diagnosticDB").collection("users");
+    const testCollection=client.db("diagnosticDB").collection("test");
+    const reservationCollection=client.db("diagnosticDB").collection("reservation");
 
     app.get('/districts',async(req,res)=>{
         const result=await districtsCollection.find().toArray();
@@ -43,6 +45,18 @@ async function run() {
         const result=await upazillasCollection.find().toArray();
         res.send(result);
     })
+    app.get('/test',async(req,res)=>{
+        const result=await testCollection.find().toArray();
+        res.send(result);
+    })
+    app.get('/test/:id', async (req,res)=>{
+        const id = req.params.id;
+        const query={_id:new ObjectId(id)};
+        const result=await testCollection.findOne(query);
+        res.send(result);
+    })
+
+    // users related api
     
     app.post('/users', async (req,res) => {
       const users = req.body;
@@ -54,6 +68,22 @@ async function run() {
         const result=await usersCollection.find().toArray();
         res.send(result);
 
+    })
+    // reservation
+    app.post('/reservation',async(req,res)=>{
+        const reservation=req.body;
+        const result=await reservationCollection.insertOne(reservation);
+        res.send(result);
+  
+    })
+      
+      
+    app.get('/reservation',async(req,res)=>{
+          const email=req.query.email;
+          const query={email:email};
+          const result=await reservationCollection.find(query).toArray();
+          res.send(result);
+  
     })
 
     // Send a ping to confirm a successful connection
