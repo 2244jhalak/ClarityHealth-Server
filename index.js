@@ -35,6 +35,7 @@ async function run() {
     const usersCollection=client.db("diagnosticDB").collection("users");
     const testCollection=client.db("diagnosticDB").collection("test");
     const reservationCollection=client.db("diagnosticDB").collection("reservation");
+    const bannerCollection=client.db("diagnosticDB").collection("banner");
 
     // jwt related api
     app.post('/jwt', async (req,res)=>{
@@ -141,6 +142,18 @@ async function run() {
         }
       }
       const result=await usersCollection.updateOne(filter,updatedDoc);
+      res.send(result);
+    })
+    // banner
+    // app.get('/menu/:id', async (req,res)=>{
+    //   const id = req.params.id;
+    //   const query={_id:new ObjectId(id)};
+    //   const result=await menuCollection.findOne(query);
+    //   res.send(result);
+    // })
+    app.post('/banner',verifyToken,verifyAdmin, async (req,res) => {
+      const item = req.body;
+      const result = await bannerCollection.insertOne(item);
       res.send(result);
     })
     // reservation
