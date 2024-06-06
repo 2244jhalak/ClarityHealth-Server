@@ -145,17 +145,38 @@ async function run() {
       res.send(result);
     })
     // banner
-    // app.get('/menu/:id', async (req,res)=>{
-    //   const id = req.params.id;
-    //   const query={_id:new ObjectId(id)};
-    //   const result=await menuCollection.findOne(query);
-    //   res.send(result);
-    // })
+    app.delete('/banner/:id',verifyToken,verifyAdmin, async (req,res)=>{
+      const id = req.params.id;
+      const query={_id:new ObjectId(id)};
+      const result=await bannerCollection.deleteOne(query);
+      res.send(result);
+    })
     app.post('/banner',verifyToken,verifyAdmin, async (req,res) => {
       const item = req.body;
       const result = await bannerCollection.insertOne(item);
       res.send(result);
     })
+    app.get('/banner',async(req,res)=>{
+      const result=await bannerCollection.find().toArray();
+      res.send(result);
+
+  })
+  app.patch('/banner/:id',verifyToken,verifyAdmin,async (req,res) =>{
+    const banner=req.body;
+    const id=req.params.id;
+    const filter={_id:new ObjectId(id)};
+    const updatedDoc={
+      $set:{
+        isActive:banner.isActive
+      }
+    }
+    
+    await bannerCollection.updateMany({}, { $set: { isActive: 'false' } });
+    const result=await bannerCollection.updateOne(filter,updatedDoc);
+    
+    
+    res.send(result);
+  })
     // reservation
     app.post('/reservation',async(req,res)=>{
         const reservation=req.body;
