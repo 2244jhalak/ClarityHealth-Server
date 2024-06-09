@@ -3,6 +3,7 @@ const cors=require('cors');
 const jwt=require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app=express();
 const port=process.env.PORT || 5000;
@@ -28,7 +29,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const districtsCollection=client.db("diagnosticDB").collection("districts");
     const upazillasCollection=client.db("diagnosticDB").collection("upazilas");
@@ -36,6 +37,7 @@ async function run() {
     const testCollection=client.db("diagnosticDB").collection("test");
     const reservationCollection=client.db("diagnosticDB").collection("reservation");
     const bannerCollection=client.db("diagnosticDB").collection("banner");
+    const paymentCollection=client.db("diagnosticDB").collection("payment");
 
     // jwt related api
     app.post('/jwt', async (req,res)=>{
@@ -89,6 +91,12 @@ async function run() {
         res.send(result);
     })
     app.get('/test/:id', async (req,res)=>{
+        const id = req.params.id;
+        const query={_id:new ObjectId(id)};
+        const result=await testCollection.findOne(query);
+        res.send(result);
+    })
+    app.get('/test/payment/:id', async (req,res)=>{
         const id = req.params.id;
         const query={_id:new ObjectId(id)};
         const result=await testCollection.findOne(query);
@@ -199,6 +207,44 @@ async function run() {
         const query={_id:new ObjectId(id)};
         const result=await reservationCollection.deleteOne(query);
         res.send(result);
+      })
+      // payment
+      app.post('/create-payment-intent', async (req, res) => {
+        const { price } = req.body;
+        const amount = parseInt(price*100);
+      
+        // Create a PaymentIntent with the order amount and currency
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amount,
+          currency: "usd",
+          payment_method_types:['card']
+         
+        });
+        res.send({
+          clientSecret: paymentIntent.client_secret,
+        })
+      })
+  
+      app.get('/payments/:email',verifyToken, async(req,res)=>{
+        const query = {email: req.params.email};
+        if(req.params.email !== req.decoded.email) {
+          return res.status(403).send({message: 'forbidden access'});
+        }
+        const result = await paymentCollection.find(query).toArray();
+        res.send(result);
+      })
+  
+      app.post('/payments', async(req,res)=>{
+        const payment = req.body;
+        const paymentResult = await paymentCollection.insertOne(payment);
+  
+        // carefully delete each item from the cart
+        console.log('payment info', payment);
+        const query = {_id:{
+          $in: payment.reservationId.map(id => new ObjectId(id))
+        }}
+        const deleteResult = await reservationCollection.deleteMany(query);
+        res.send({paymentResult,deleteResult});
       })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
