@@ -29,7 +29,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    await client.connect();
 
     const districtsCollection=client.db("diagnosticDB").collection("districts");
     const upazillasCollection=client.db("diagnosticDB").collection("upazilas");
@@ -38,11 +38,12 @@ async function run() {
     const reservationCollection=client.db("diagnosticDB").collection("reservation");
     const bannerCollection=client.db("diagnosticDB").collection("banner");
     const paymentCollection=client.db("diagnosticDB").collection("payment");
+    const recommendationCollection=client.db("diagnosticDB").collection("recommendation");
 
     // jwt related api
     app.post('/jwt', async (req,res)=>{
       const user = req.body;
-      const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'1d'});
+      const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'3d'});
       res.send({token});
     })
 
@@ -76,9 +77,16 @@ async function run() {
       }
       next();
     }
+    
+   
+    
 
     app.get('/districts',async(req,res)=>{
         const result=await districtsCollection.find().toArray();
+        res.send(result);
+    })
+    app.get('/recommendation',async(req,res)=>{
+        const result=await recommendationCollection.find().toArray();
         res.send(result);
     })
 
@@ -127,6 +135,26 @@ async function run() {
         res.send(result);
 
     })
+    
+    
+    
+    app.patch('/users/blocked/:id',verifyToken,verifyAdmin,async (req,res) =>{
+      
+      const id=req.params.id;
+      const filter={_id:new ObjectId(id)};
+      const updatedDoc={
+        $set:{
+          status:'blocked'
+        }
+      }
+      
+      
+      const result=await usersCollection.updateOne(filter,updatedDoc);
+      
+      
+      res.send(result);
+    })
+    
     app.get('/users/admin/:email',verifyToken, async(req,res)=>{
       const email=req.params.email;
       if(email !== req.decoded.email){
@@ -227,6 +255,7 @@ async function run() {
   
       app.get('/payments/:email',verifyToken, async(req,res)=>{
         const query = {email: req.params.email};
+        
         if(req.params.email !== req.decoded.email) {
           return res.status(403).send({message: 'forbidden access'});
         }
@@ -246,6 +275,47 @@ async function run() {
         const deleteResult = await reservationCollection.deleteMany(query);
         res.send({paymentResult,deleteResult});
       })
+      app.get('/payments',async(req,res)=>{
+        const email=req.query.email;
+        const query={email:email};
+        const result=await paymentCollection.find(query).toArray();
+        res.send(result);
+
+     })
+     
+     app.delete('/payments/:id', async(req,res)=>{
+      const id = req.params.id;
+      const query={_id:new ObjectId(id)};
+      const result=await paymentCollection.deleteOne(query);
+      res.send(result);
+    })
+    app.get('/payment',async(req,res)=>{
+      const result=await paymentCollection.find().toArray();
+      res.send(result);
+
+  })
+  app.patch('/payment/:id',verifyToken,verifyAdmin,async (req,res) =>{
+    const report=req.body;
+    const id=req.params.id;
+    const filter={_id:new ObjectId(id)};
+    const updatedDoc={
+      $set:{
+        status:report.status
+      }
+    }
+    
+    
+    const result=await paymentCollection.updateOne(filter,updatedDoc);
+    
+    
+    res.send(result);
+  })
+  app.delete('/payment/:id',verifyToken,verifyAdmin, async(req,res)=>{
+    const id = req.params.id;
+    const query={_id:new ObjectId(id)};
+    const result=await paymentCollection.deleteOne(query);
+    res.send(result);
+  })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
