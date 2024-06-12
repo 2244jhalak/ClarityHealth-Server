@@ -29,7 +29,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const districtsCollection=client.db("diagnosticDB").collection("districts");
     const upazillasCollection=client.db("diagnosticDB").collection("upazilas");
@@ -98,6 +98,11 @@ async function run() {
         const result=await testCollection.find().toArray();
         res.send(result);
     })
+    app.post('/test',verifyToken,verifyAdmin, async (req,res) => {
+      const item = req.body;
+      const result = await testCollection.insertOne(item);
+      res.send(result);
+    })
     app.get('/test/:id', async (req,res)=>{
         const id = req.params.id;
         const query={_id:new ObjectId(id)};
@@ -135,6 +140,12 @@ async function run() {
         res.send(result);
 
     })
+    app.get('/users/:id', async (req,res)=>{
+      const id = req.params.id;
+      const query={_id:new ObjectId(id)};
+      const result=await usersCollection.findOne(query);
+      res.send(result);
+  })
     
     
     
@@ -253,7 +264,7 @@ async function run() {
         })
       })
   
-      app.get('/payments/:email',verifyToken, async(req,res)=>{
+      app.get('/payments/:email',verifyAdmin, async(req,res)=>{
         const query = {email: req.params.email};
         
         if(req.params.email !== req.decoded.email) {
