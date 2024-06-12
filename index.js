@@ -103,7 +103,13 @@ async function run() {
       const result = await testCollection.insertOne(item);
       res.send(result);
     })
-    app.get('/test/:id', async (req,res)=>{
+    app.delete('/test/:id',verifyToken,verifyAdmin, async (req,res)=>{
+      const id = req.params.id;
+      const query={_id:new ObjectId(id)};
+      const result=await testCollection.deleteOne(query);
+      res.send(result);
+    })
+    app.get('/tests/:id', async (req,res)=>{
         const id = req.params.id;
         const query={_id:new ObjectId(id)};
         const result=await testCollection.findOne(query);
@@ -115,7 +121,7 @@ async function run() {
         const result=await testCollection.findOne(query);
         res.send(result);
     })
-    app.patch('/test/:id',async (req,res) =>{
+    app.patch('/tests/:id',async (req,res) =>{
         const id=req.params.id;
         const filter={_id:new ObjectId(id)};
         const updatedDoc={
@@ -125,6 +131,23 @@ async function run() {
         }
         const result=await testCollection.updateOne(filter,updatedDoc);
         res.send(result);
+    })
+    app.patch('/test/:id',async (req,res)=>{
+      const data=req.body;
+      const id=req.params.id;
+      const filter={_id:new ObjectId(id)};
+      const updatedDoc = {
+        $set: {
+          testName :data.testName,
+            imageUrl:data.imageUrl,
+            details:data.details,
+            price:data.price,
+            date:data.date,
+            slots:data.slots,
+        }
+      }
+      const result = await testCollection.updateOne(filter,updatedDoc);
+      res.send(result);
     })
 
     // users related api
