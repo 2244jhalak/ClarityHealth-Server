@@ -350,9 +350,47 @@ async function run() {
     const result=await paymentCollection.deleteOne(query);
     res.send(result);
   })
+  // using aggregate pipeline
+  app.get('/order-stats',verifyToken, verifyAdmin, async(req,res)=>{
+    const result = await paymentCollection.aggregate([
+      {
+        $unwind: '$reservationId'
+      },
+      {
+        $lookup:{
+          from: 'testCollection',
+          localField: 'reservationId',
+          foreignField: '_id',
+          as: 'testItems'
+        }
+      },
+      {
+        $unwind: '$testItems'
+      }
+      
+      ,
+      {
+        $group: {
+          _id: '$testItems.name',
+          quantity:{$sum:1},
+          revenue: {$sum:'$menuItems.price'}
+        }
+      },
+      {
+        $project: {
+          _id:0,
+          category: '$_id',
+          quantity: '$quantity',
+          revenue: '$revenue'
+        }
+      }
+
+    ]).toArray();
+    res.send(result);
+  })
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
